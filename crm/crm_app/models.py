@@ -8,14 +8,23 @@ class User(AbstractUser):
     is_organizer = models.BooleanField(_("organizer"), default=False)
     is_agent = models.BooleanField(_("agent"), default=False)
 
-
 # User Profile Model
 class UserProfile(models.Model):
+    ROLE_CHOICES = [
+        ("admin", "Admin"),
+        ("customer", "Customer"),
+        ("manager", "Manager"),
+        ("hr", "HR"),
+    ]
+    
     user = models.OneToOneField(User, verbose_name=_("User Profile"), on_delete=models.CASCADE)
+    bio = models.TextField(blank=True)
+    profile_picture = models.ImageField(upload_to="profiles/", blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES)
 
     def __str__(self):
         return self.user.username
-
 
 # Agent Model
 class Agent(models.Model):
@@ -27,7 +36,6 @@ class Agent(models.Model):
 
     def get_absolute_url(self):
         return reverse_lazy("agents:detail-agent", kwargs={"pk": self.pk})
-
 
 # Client Model
 class Client(models.Model):
@@ -43,29 +51,6 @@ class Client(models.Model):
 
     def get_absolute_url(self):
         return reverse_lazy("crm:detail-client", kwargs={"pk": self.pk})
-
-
-# Admin Profile Model
-class AdminProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bio = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to="profiles/", blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
-    role = models.CharField(max_length=50, choices=[("manager", "Manager"), ("hr", "HR")])
-
-    def __str__(self):
-        return self.user.username
-
-
-# Customer Profile Model
-class CustomerProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bio = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to="profiles/", blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
-
-    def __str__(self):
-        return self.user.username
 
 
 # Calendar Event Model
