@@ -1,22 +1,63 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+from django.utils.translation import gettext_lazy as _
+from django.urls import reverse_lazy
 
-# User Profile Models
+# Custom User Model
+class User(AbstractUser):
+    is_organizer = models.BooleanField(_("organizer"), default=False)
+    is_agent = models.BooleanField(_("agent"), default=False)
 
 
-class AdminProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bio = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to="profiles/", blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
-    role = models.CharField(
-        max_length=50, choices=[("manager", "Manager"), ("hr", "HR")]
-    )
+# User Profile Model
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, verbose_name=_("User Profile"), on_delete=models.CASCADE)
 
     def __str__(self):
         return self.user.username
 
 
+# Agent Model
+class Agent(models.Model):
+    user = models.OneToOneField(User, verbose_name=_("Agent"), on_delete=models.CASCADE)
+    organisation = models.ForeignKey(UserProfile, related_name='agent_organisation', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.user.email
+
+    def get_absolute_url(self):
+        return reverse_lazy("agents:detail-agent", kwargs={"pk": self.pk})
+
+
+# Client Model
+class Client(models.Model):
+    name = models.CharField(max_length=240)
+    phone = models.CharField(max_length=14)
+    address = models.CharField(max_length=300)
+    email = models.EmailField(max_length=240)
+    date_created = models.DateTimeField(auto_now_add=True)
+    organisation = models.ForeignKey(UserProfile, related_name='client_organisation', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse_lazy("crm:detail-client", kwargs={"pk": self.pk})
+
+
+# Admin Profile Model
+class AdminProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True)
+    profile_picture = models.ImageField(upload_to="profiles/", blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    role = models.CharField(max_length=50, choices=[("manager", "Manager"), ("hr", "HR")])
+
+    def __str__(self):
+        return self.user.username
+
+
+# Customer Profile Model
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
@@ -27,22 +68,20 @@ class CustomerProfile(models.Model):
         return self.user.username
 
 
-# Calendar Models
+# Calendar Event Model
 class CalendarEvent(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    created_by = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="created_events"
-    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_events")
     attendees = models.ManyToManyField(User, related_name="events_attending")
 
     def __str__(self):
         return self.title
 
 
-# Document Models
+# Document Model
 class Document(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -54,15 +93,13 @@ class Document(models.Model):
         return self.title
 
 
-# Meeting Models
+# Meeting Model
 class Meeting(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    created_by = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="created_meetings"
-    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_meetings")
     attendees = models.ManyToManyField(User, related_name="meetings_attending")
     google_meet_link = models.URLField(max_length=200, blank=True)
 
@@ -70,14 +107,12 @@ class Meeting(models.Model):
         return self.title
 
 
-# Task Models
+# Task Model
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     due_date = models.DateTimeField()
-    assigned_to = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="tasks"
-    )
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
     completed = models.BooleanField(default=False)
 
     def __str__(self):
@@ -174,15 +209,11 @@ class Objective(models.Model):
 
 
 class OKRTask(models.Model):
-    objective = models.ForeignKey(
-        Objective, on_delete=models.CASCADE, related_name="tasks"
-    )
+    objective = models.ForeignKey(Objective, on_delete=models.CASCADE, related_name="tasks")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     due_date = models.DateTimeField()
-    assigned_to = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="okr_tasks"
-    )
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="okr_tasks")
     completed = models.BooleanField(default=False)
 
     def __str__(self):
